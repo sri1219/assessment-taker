@@ -3,6 +3,7 @@ const router = express.Router();
 const Assessment = require('../models/Assessment');
 const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
+const { executeJava } = require('../utils/executor');
 
 // Create Assessment
 router.post('/', async (req, res) => {
@@ -78,14 +79,41 @@ router.post('/:id/submit', async (req, res) => {
         let totalPossible = 0;
 
         // Very basic scoring logic for now (sum of parts)
-        answers.forEach(a => {
+        // Check Compilation and Basic Scoring
+        const processedAnswers = await Promise.all(answers.map(async (a) => {
+            let isCompiled = false;
+            let compileOutput = '';
+
+            try {
+                // Determine implicit compilation check using existing executor with empty input
+                // Or if passedTestCases > 0, it implied compilation worked (assuming frontend checked).
+                // But requested feature is "Compile them and show output"
+                const result = await executeJava(a.code, "");
+                if (!result.error) {
+                    isCompiled = true;
+                    compileOutput = result.output || "Compiled Successfully";
+                } else {
+                    isCompiled = false;
+                    compileOutput = result.error;
+                }
+            } catch (err) {
+                isCompiled = false;
+                compileOutput = err.message;
+            }
+
             totalReceived += a.passedTestCases || 0;
             totalPossible += a.totalTestCases || 0;
-        });
+
+            return {
+                ...a,
+                isCompiled,
+                compileOutput
+            };
+        }));
 
         const finalScore = totalPossible > 0 ? Math.round((totalReceived / totalPossible) * 100) : 0;
 
-        submission.answers = answers;
+        submission.answers = processedAnswers;
         submission.status = 'SUBMITTED';
         submission.submittedAt = Date.now();
         submission.finalScore = finalScore;

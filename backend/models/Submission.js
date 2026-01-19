@@ -4,7 +4,10 @@ const AnswerSchema = new mongoose.Schema({
     problem: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem', required: true },
     code: { type: String, required: true },
     passedTestCases: { type: Number, default: 0 },
-    totalTestCases: { type: Number, default: 0 }
+    totalTestCases: { type: Number, default: 0 },
+    isCompiled: { type: Boolean, default: false },
+    compileOutput: { type: String, default: '' },
+    manualScore: { type: Number, default: 0 }
 });
 
 const SubmissionSchema = new mongoose.Schema({

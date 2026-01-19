@@ -70,10 +70,7 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleViewSubmission = (submission) => {
-        setSubmissionDetails(submission);
-        setViewSubmission(true);
-    };
+
 
     const loadProblems = async () => {
         try {
@@ -171,6 +168,43 @@ const AdminDashboard = () => {
         setEditingAssessment(null);
         setAssessTitle('');
         setSelectedProblems([]);
+    };
+
+    const [grades, setGrades] = useState({});
+
+    const handleViewSubmission = (sub) => {
+        setSubmissionDetails(sub);
+        setViewSubmission(true);
+        // Initialize grades state
+        const initialGrades = {};
+        sub.answers.forEach(a => {
+            const pid = a.problem._id || a.problem;
+            initialGrades[pid] = a.manualScore || 0;
+        });
+        setGrades(initialGrades);
+    };
+
+    const handleGradeChange = (problemId, score) => {
+        setGrades(prev => ({
+            ...prev,
+            [problemId]: score
+        }));
+    };
+
+    const saveGrades = async () => {
+        try {
+            const updates = Object.keys(grades).map(pid => ({
+                problemId: pid,
+                score: grades[pid]
+            }));
+
+            await axios.put(`${API_BASE_URL}/submissions/${submissionDetails._id}/grade`, { answers: updates });
+            alert('Grades saved successfully!');
+            setViewSubmission(false);
+            loadSubmissions(); // Refresh to see new score
+        } catch (e) {
+            alert('Error saving grades: ' + e.message);
+        }
     };
 
     // --- ROLE GUARD ---
@@ -418,13 +452,48 @@ const AdminDashboard = () => {
                                     <p><span className="text-gray-400">Submitted:</span> {new Date(submissionDetails.submittedAt).toLocaleString()}</p>
                                 </div>
                                 <div className="col-span-2 mt-4">
-                                    <h3 className="text-lg font-bold text-green-400 mb-2">Code Answers</h3>
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-lg font-bold text-green-400">Code Answers & Grading</h3>
+                                        <button
+                                            onClick={saveGrades}
+                                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded font-bold"
+                                        >
+                                            Save Grades & Calculate Final Score
+                                        </button>
+                                    </div>
                                     {submissionDetails.answers.map((ans, idx) => (
-                                        <div key={idx} className="mb-6 bg-black p-4 rounded border border-gray-700">
-                                            <div className="text-sm text-gray-500 mb-2">Problem ID: {ans.problem}</div>
-                                            <pre className="font-mono text-sm text-gray-300 overflow-x-auto">
+                                        <div key={idx} className="mb-6 bg-gray-900 p-4 rounded border border-gray-700">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div>
+                                                    <h4 className="text-md font-bold text-white mb-1">
+                                                        Q{idx + 1}: {ans.problem.title || ans.problem || 'Unknown Problem'}
+                                                    </h4>
+                                                    <span className={`text-xs px-2 py-1 rounded ${ans.isCompiled ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                                                        {ans.isCompiled ? 'Compiles Successfully' : 'Compilation Failed'}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <pre className="font-mono text-sm text-gray-300 bg-black p-3 rounded mb-3 overflow-x-auto border border-gray-800">
                                                 {ans.code}
                                             </pre>
+
+                                            <div className="mb-3">
+                                                <h5 className="text-sm font-bold text-gray-400 mb-1">Compilation Output:</h5>
+                                                <pre className="text-xs text-gray-500 bg-gray-950 p-2 rounded whitespace-pre-wrap">
+                                                    {ans.compileOutput || 'No output available.'}
+                                                </pre>
+                                            </div>
+
+                                            <div className="flex items-center gap-4 bg-gray-800 p-3 rounded">
+                                                <label className="text-sm text-gray-300 font-bold">Manual Score:</label>
+                                                <input
+                                                    type="number"
+                                                    className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1 w-24"
+                                                    defaultValue={ans.manualScore || 0}
+                                                    onChange={(e) => handleGradeChange(ans.problem._id || ans.problem, e.target.value)}
+                                                />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
