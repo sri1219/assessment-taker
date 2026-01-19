@@ -96,6 +96,10 @@ const AdminDashboard = () => {
 
     const handleCreateProblem = async (e) => {
         e.preventDefault();
+        if (!problem.description || !problem.description.trim()) {
+            alert('Description field is mandatory');
+            return;
+        }
         try {
             await axios.post(`${API_BASE_URL}/problems`, problem);
             alert('Problem Created');
