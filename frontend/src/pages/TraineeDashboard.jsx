@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -13,8 +14,8 @@ const TraineeDashboard = () => {
         const fetchData = async () => {
             try {
                 const [assessRes, subRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/assessments'),
-                    axios.get('http://localhost:5000/api/submissions') // In real app, filter by user
+                    axios.get(`${API_BASE_URL}/assessments`),
+                    axios.get(`${API_BASE_URL}/submissions`) // In real app, filter by user
                 ]);
                 setAssessments(assessRes.data);
                 // Filter submissions for current user
@@ -41,7 +42,7 @@ const TraineeDashboard = () => {
         }
 
         try {
-            await axios.post(`http://localhost:5000/api/assessments/${id}/start`, { userId: user._id });
+            await axios.post(`${API_BASE_URL}/assessments/${id}/start`, { userId: user._id });
             navigate(`/assessment/${id}`);
         } catch (e) {
             alert('Error starting assessment: ' + (e.response?.data?.error || e.message));

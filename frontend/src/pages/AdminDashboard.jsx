@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,7 +38,7 @@ const AdminDashboard = () => {
 
     const loadUsers = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/users');
+            const res = await axios.get(`${API_BASE_URL}/users`);
             setUsers(res.data);
         } catch (e) {
             console.error('Failed using loadUsers', e);
@@ -46,21 +47,21 @@ const AdminDashboard = () => {
 
     const loadAssessments = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/assessments');
+            const res = await axios.get(`${API_BASE_URL}/assessments`);
             setAssessments(res.data);
         } catch (e) { console.error('Failed loadAssessments', e); }
     };
 
     const loadSubmissions = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/submissions');
+            const res = await axios.get(`${API_BASE_URL}/submissions`);
             setSubmissions(res.data);
         } catch (e) { console.error('Failed loadSubmissions', e); }
     };
 
     const resetSubmission = async (submissionId) => {
         try {
-            await axios.post(`http://localhost:5000/api/submissions/${submissionId}/delete`);
+            await axios.post(`${API_BASE_URL}/submissions/${submissionId}/delete`);
             loadSubmissions();
             alert('Status Reset');
         } catch (e) {
@@ -75,7 +76,7 @@ const AdminDashboard = () => {
 
     const loadProblems = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/problems');
+            const res = await axios.get(`${API_BASE_URL}/problems`);
             setAllProblems(res.data);
         } catch (e) {
             console.error(e);
@@ -85,7 +86,7 @@ const AdminDashboard = () => {
     const handleCreateUser = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/auth/register', newUser);
+            await axios.post(`${API_BASE_URL}/auth/register`, newUser);
             alert('User Created');
             setNewUser({ name: '', email: '', password: '', role: 'trainee' });
         } catch (e) {
@@ -96,7 +97,7 @@ const AdminDashboard = () => {
     const handleCreateProblem = async (e) => {
         e.preventDefault();
         try {
-            await axios.post('http://localhost:5000/api/problems', problem);
+            await axios.post(`${API_BASE_URL}/problems`, problem);
             alert('Problem Created');
             setProblem({ title: '', description: '', starterCode: '', testCases: [] });
             loadProblems();
@@ -112,7 +113,7 @@ const AdminDashboard = () => {
 
     const handleCreateAssessment = async () => {
         try {
-            await axios.post('http://localhost:5000/api/assessments', {
+            await axios.post(`${API_BASE_URL}/assessments`, {
                 title: assessTitle,
                 problems: selectedProblems
             });

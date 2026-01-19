@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import API_BASE_URL from '../config';
 import Editor from '@monaco-editor/react';
 import { AuthContext } from '../context/AuthContext';
 import { useProctoring } from '../hooks/useProctoring';
@@ -24,7 +25,7 @@ const AssessmentRunner = () => {
     useEffect(() => {
         const fetchAssessment = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/assessments/${id}`);
+                const res = await axios.get(`${API_BASE_URL}/assessments/${id}`);
                 setAssessment(res.data);
 
                 // Initialize answers state
@@ -70,7 +71,7 @@ const AssessmentRunner = () => {
         try {
             // Use first test case as sample or hardcoded sample
             const sampleInput = problem.testCases[0]?.input || '';
-            const res = await axios.post('http://localhost:5000/api/execute/run', { code, input: sampleInput });
+            const res = await axios.post(`${API_BASE_URL}/execute/run`, { code, input: sampleInput });
 
             setOutput(res.data.error ? `Error: ${res.data.error}` : `Output: ${res.data.output}`);
         } catch (e) {
@@ -91,7 +92,7 @@ const AssessmentRunner = () => {
                 totalTestCases: 0
             }));
 
-            await axios.post(`http://localhost:5000/api/assessments/${id}/submit`, {
+            await axios.post(`${API_BASE_URL}/assessments/${id}/submit`, {
                 userId: user._id,
                 answers: formattedAnswers,
                 violationCount: violations.length

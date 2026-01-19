@@ -3,9 +3,9 @@ import Editor from '@monaco-editor/react';
 import axios from 'axios';
 import { useProctoring } from '../hooks/useProctoring';
 
-const API_BASE = 'http://localhost:5000/api';
+import API_BASE_URL from '../config';
 
-const AssessmentInterface = ({ assignmentId = 'demo', userId = 'user1' }) => {
+const AssessmentInterface = ({ assessment, user }) => {
     const [problem, setProblem] = useState({
         title: 'Loading...',
         description: 'Fetching problem...',
@@ -28,9 +28,9 @@ public class Solution {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         // Write your code here
-        
+
     }
-}`
+} `
         });
         setCode(`import java.util.Scanner;
 
@@ -43,11 +43,11 @@ public class Solution {
             System.out.println(a + b);
         }
     }
-}`);
+} `);
     }, [assignmentId]);
 
     const handleViolation = (type) => {
-        const msg = `${type} at ${new Date().toLocaleTimeString()}`;
+        const msg = `${type} at ${new Date().toLocaleTimeString()} `;
         setViolations(prev => [...prev, msg]);
         setIsLocked(true); // LOCK START
     };
@@ -57,14 +57,14 @@ public class Solution {
     const handleRun = async () => {
         setOutput('Running...');
         try {
-            const res = await axios.post(`${API_BASE}/execute/run`, {
+            const res = await axios.post(`${API_BASE} /execute/run`, {
                 code,
                 input: '5 10'
             });
             if (res.data.error) {
-                setOutput(`Error:\n${res.data.error}`);
+                setOutput(`Error: \n${res.data.error} `);
             } else {
-                setOutput(`Output:\n${res.data.output}`);
+                setOutput(`Output: \n${res.data.output} `);
             }
         } catch (err) {
             setOutput('Execution Error: ' + err.message);
@@ -74,13 +74,13 @@ public class Solution {
     const handleSubmit = async () => {
         setOutput('Submitting...');
         try {
-            const res = await axios.post(`${API_BASE}/execute/submit`, {
+            const res = await axios.post(`${API_BASE} /execute/submit`, {
                 userId,
                 assignmentId: '65a...',
                 code,
                 violationCount: violations.length
             });
-            setOutput(`Submission Result: Score ${res.data.score}%`);
+            setOutput(`Submission Result: Score ${res.data.score}% `);
         } catch (err) {
             setOutput('Submission Failed: ' + err.message);
         }
@@ -121,7 +121,7 @@ public class Solution {
                 </div>
             )}
 
-            <div className={`w-1/3 p-6 border-r border-gray-700 overflow-y-auto ${isLocked ? 'blur-sm grayscale' : ''}`}>
+            <div className={`w - 1 / 3 p - 6 border - r border - gray - 700 overflow - y - auto ${isLocked ? 'blur-sm grayscale' : ''} `}>
                 <h1 className="text-2xl font-bold mb-4 text-blue-400">{problem.title}</h1>
                 <div className="prose prose-invert mb-6">
                     <p>{problem.description}</p>
@@ -148,7 +148,7 @@ public class Solution {
                 )}
             </div>
 
-            <div className={`w-2/3 flex flex-col ${isLocked ? 'blur-sm grayscale' : ''}`}>
+            <div className={`w - 2 / 3 flex flex - col ${isLocked ? 'blur-sm grayscale' : ''} `}>
                 <div className="h-12 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4">
                     <span className="font-mono text-sm text-gray-400">Solution.java</span>
                     <div className="space-x-2">
