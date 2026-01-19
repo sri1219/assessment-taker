@@ -89,12 +89,16 @@ router.post('/:id/submit', async (req, res) => {
                 // Or if passedTestCases > 0, it implied compilation worked (assuming frontend checked).
                 // But requested feature is "Compile them and show output"
                 const result = await executeJava(a.code, "");
-                if (!result.error) {
-                    isCompiled = true;
-                    compileOutput = result.output || "Compiled Successfully";
+
+                isCompiled = result.compiled;
+
+                if (result.compiled) {
+                    // Compiled successfully. 
+                    // If there is an error (runtime), show it. If output, show it.
+                    // Prefer output if no error, but usually empty input -> crash or no output.
+                    compileOutput = result.error ? `Runtime Error (Empty Input):\n${result.error}` : (result.output || "Compiled Successfully (No Output)");
                 } else {
-                    isCompiled = false;
-                    compileOutput = result.error;
+                    compileOutput = result.error; // Compilation Error
                 }
             } catch (err) {
                 isCompiled = false;
