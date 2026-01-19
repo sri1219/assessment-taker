@@ -32,7 +32,7 @@ const AssessmentRunner = () => {
                 const initialAnswers = {};
                 res.data.problems.forEach(p => {
                     initialAnswers[p._id] = {
-                        code: p.starterCode,
+                        code: p.starterCode || '',
                         output: '',
                         passedTestCases: 0,
                         totalTestCases: p.testCases.length
