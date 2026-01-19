@@ -193,8 +193,8 @@ const AdminDashboard = () => {
                 {/* Create Problem */}
                 <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
                     <h2 className="text-xl mb-4 text-purple-400">Create Problem</h2>
-                    <input className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Title" value={problem.title} onChange={e => setProblem({ ...problem, title: e.target.value })} />
-                    <textarea className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Description" rows="3" value={problem.description} onChange={e => setProblem({ ...problem, description: e.target.value })} />
+                    <input className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Title" value={problem.title} onChange={e => setProblem({ ...problem, title: e.target.value })} required />
+                    <textarea className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Description" rows="3" value={problem.description} onChange={e => setProblem({ ...problem, description: e.target.value })} required />
                     <textarea className="w-full mb-2 p-2 bg-gray-700 rounded font-mono" placeholder="Starter Code" rows="3" value={problem.starterCode} onChange={e => setProblem({ ...problem, starterCode: e.target.value })} />
 
                     <div className="bg-gray-700 p-4 rounded mb-4">
