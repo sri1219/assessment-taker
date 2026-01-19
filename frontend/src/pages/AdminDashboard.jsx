@@ -102,7 +102,8 @@ const AdminDashboard = () => {
             setProblem({ title: '', description: '', starterCode: '', testCases: [] });
             loadProblems();
         } catch (e) {
-            alert('Error creating problem');
+            console.error(e);
+            alert('Error creating problem: ' + (e.response?.data?.error || e.message));
         }
     };
 
