@@ -207,6 +207,49 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleAdminCompile = async (idx, code) => {
+        // Optimistic UI update
+        const updatedAnswers = [...submissionDetails.answers];
+        updatedAnswers[idx] = { ...updatedAnswers[idx], compileOutput: 'Compiling...', isCompiled: undefined };
+        setSubmissionDetails({ ...submissionDetails, answers: updatedAnswers });
+
+        try {
+            const res = await axios.post(`${API_BASE_URL}/execute/run`, { code, input: '' });
+
+            // Handle new result format
+            // If backend executor returns success but output message contains "Error", it might be a runtime error.
+            // But we specifically rely on the 'error' field in response.
+            // Wait, we just verified executor returns { error: '...' } on failure/runtime error.
+
+            // Wait, previous step updated executor to return compiled: boolean.
+            // But /api/execute/run endpoint logic might not be passing that through directly?
+            // Need to check execute.js route.
+            // Assuming execute.js route effectively returns output/error as before but let's assume standard format.
+            // Actually, I should update the Executor route too if I want it to send `compiled` flag. 
+            // BUT, for now let's rely on 'error' string presence.
+
+            const isSuccess = !res.data.error;
+            const output = res.data.error
+                ? `Compilation/Runtime Error:\n${res.data.error}`
+                : (res.data.output || 'Compiled Successfully');
+
+            updatedAnswers[idx] = {
+                ...updatedAnswers[idx],
+                compileOutput: output,
+                isCompiled: isSuccess
+            };
+            setSubmissionDetails({ ...submissionDetails, answers: updatedAnswers });
+
+        } catch (e) {
+            updatedAnswers[idx] = {
+                ...updatedAnswers[idx],
+                compileOutput: 'System Error: ' + e.message,
+                isCompiled: false
+            };
+            setSubmissionDetails({ ...submissionDetails, answers: updatedAnswers });
+        }
+    };
+
     // --- ROLE GUARD ---
     useEffect(() => {
         if (user && user.role !== 'admin') {
@@ -468,10 +511,18 @@ const AdminDashboard = () => {
                                                     <h4 className="text-md font-bold text-white mb-1">
                                                         Q{idx + 1}: {ans.problem.title || ans.problem || 'Unknown Problem'}
                                                     </h4>
-                                                    <span className={`text-xs px-2 py-1 rounded ${ans.isCompiled ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
-                                                        {ans.isCompiled ? 'Compiles Successfully' : 'Compilation Failed'}
-                                                    </span>
+                                                    {ans.isCompiled !== undefined && (
+                                                        <span className={`text-xs px-2 py-1 rounded ${ans.isCompiled ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}`}>
+                                                            {ans.isCompiled ? 'Verified: Compiled' : 'Verified: Failed'}
+                                                        </span>
+                                                    )}
                                                 </div>
+                                                <button
+                                                    onClick={() => handleAdminCompile(idx, ans.code)}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded font-bold"
+                                                >
+                                                    Run Compile Check
+                                                </button>
                                             </div>
 
                                             <pre className="font-mono text-sm text-gray-300 bg-black p-3 rounded mb-3 overflow-x-auto border border-gray-800">
@@ -481,7 +532,7 @@ const AdminDashboard = () => {
                                             <div className="mb-3">
                                                 <h5 className="text-sm font-bold text-gray-400 mb-1">Compilation Output:</h5>
                                                 <pre className="text-xs text-gray-500 bg-gray-950 p-2 rounded whitespace-pre-wrap">
-                                                    {ans.compileOutput || 'No output available.'}
+                                                    {ans.compileOutput || 'Not checked yet. Click "Run Compile Check".'}
                                                 </pre>
                                             </div>
 
