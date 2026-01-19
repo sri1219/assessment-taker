@@ -33,8 +33,8 @@ const TraineeDashboard = () => {
     const getStatus = (assessmentId) => {
         const userId = user?.id || user?._id;
         const sub = submissions.find(s =>
-            (s.assessment._id || s.assessment) === assessmentId &&
-            (s.user._id || s.user) === userId
+            (s.assessment?._id || s.assessment) === assessmentId &&
+            (s.user?._id || s.user) === userId
         );
         return sub ? sub.status : 'NOT_STARTED';
     };

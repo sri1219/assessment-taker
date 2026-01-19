@@ -29,10 +29,16 @@ const executeJava = (javaCode, input, className = 'Solution') => {
         // Compile
         const javac = spawn('javac', [fileName], { cwd: dirPath, shell: true });
 
+        // Capture javac stderr to show actual compilation errors
+        let compileError = '';
+        javac.stderr.on('data', (data) => {
+            compileError += data.toString();
+        });
+
         javac.on('close', (code) => {
             if (code !== 0) {
                 cleanup(dirPath);
-                return resolve({ output: '', error: 'Compilation Failed' });
+                return resolve({ compiled: false, output: '', error: compileError || 'Compilation Failed' });
             }
 
             // Run
@@ -58,26 +64,26 @@ const executeJava = (javaCode, input, className = 'Solution') => {
             // Timeout safety (5 seconds)
             const timeout = setTimeout(() => {
                 java.kill();
-                resolve({ output: stdout, error: 'Time Limit Exceeded' });
+                resolve({ compiled: true, output: stdout, error: 'Time Limit Exceeded' });
                 cleanup(dirPath);
             }, 5000);
 
             java.on('close', (code) => {
                 clearTimeout(timeout);
                 cleanup(dirPath);
-                resolve({ output: stdout, error: stderr });
+                resolve({ compiled: true, output: stdout, error: stderr });
             });
 
             java.on('error', (err) => {
                 clearTimeout(timeout);
                 cleanup(dirPath);
-                resolve({ output: '', error: err.message });
+                resolve({ compiled: true, output: '', error: err.message });
             });
         });
 
         javac.on('error', (err) => {
             cleanup(dirPath);
-            resolve({ output: '', error: 'Compilation Error: ' + err.message });
+            resolve({ compiled: false, output: '', error: 'Compilation Process Error: ' + err.message });
         });
     });
 };

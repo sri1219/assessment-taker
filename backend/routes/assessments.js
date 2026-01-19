@@ -3,6 +3,7 @@ const router = express.Router();
 const Assessment = require('../models/Assessment');
 const Submission = require('../models/Submission');
 const Problem = require('../models/Problem');
+const { executeJava } = require('../utils/executor');
 
 // Create Assessment
 router.post('/', async (req, res) => {
@@ -78,6 +79,8 @@ router.post('/:id/submit', async (req, res) => {
         let totalPossible = 0;
 
         // Very basic scoring logic for now (sum of parts)
+        // Check Compilation and Basic Scoring
+        // Reverted per user request to move compilation to Admin Review step
         answers.forEach(a => {
             totalReceived += a.passedTestCases || 0;
             totalPossible += a.totalTestCases || 0;
