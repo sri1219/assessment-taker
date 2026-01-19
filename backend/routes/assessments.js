@@ -19,7 +19,7 @@ router.post('/', async (req, res) => {
 // Get All Assessments (Trainee View)
 router.get('/', async (req, res) => {
     try {
-        const assessments = await Assessment.find({ isActive: true }).select('-createdBy'); // Hide creator
+        const assessments = await Assessment.find().select('-createdBy'); // Hide creator
         res.json(assessments);
     } catch (e) {
         res.status(500).json({ error: e.message });
