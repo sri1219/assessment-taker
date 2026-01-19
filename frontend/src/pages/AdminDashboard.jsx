@@ -139,7 +139,8 @@ const AdminDashboard = () => {
             setSelectedProblems([]);
             loadAssessments(); // Refresh list
         } catch (e) {
-            alert('Error saving assessment');
+            console.error('Assessment Save Error:', e);
+            alert('Error saving assessment: ' + (e.response?.data?.error || e.message));
         }
     };
 
@@ -155,18 +156,15 @@ const AdminDashboard = () => {
     };
 
     const startEditAssessment = (assess) => {
+        console.log('Editing assessment:', assess);
         setEditingAssessment(assess);
         setAssessTitle(assess.title);
-        // Map problem objects to IDs if necessary, assuming populate hasn't happened or backend sends IDs
-        // Backend GET / returns objects if populated? Let's check. 
-        // Assessment.find() usually refs. If not populated, it's IDs. 
-        // My backend GET / route does NOT populate problems. So it's IDs. Good.
-        // Wait, if I populated them in previous step? No, GET / select -createdBy.
-        // Wait, GET /:id populates. GET / does not.
-        // Actually, if it's an array of objects, map to _id. If permissions issue, handle safely.
-        // Let's assume it might be populated or not. Safest:
-        const problemIds = assess.problems.map(p => p._id || p);
+        // Safely handle potential missing problems array
+        const problemIds = (assess.problems || []).map(p => p._id || p);
         setSelectedProblems(problemIds);
+
+        // Scroll to the form so the user sees the change
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
     const cancelEdit = () => {

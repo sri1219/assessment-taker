@@ -93,7 +93,7 @@ const AssessmentRunner = () => {
             }));
 
             await axios.post(`${API_BASE_URL}/assessments/${id}/submit`, {
-                userId: user._id,
+                userId: user.id || user._id,
                 answers: formattedAnswers,
                 violationCount: violations.length
             });
