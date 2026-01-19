@@ -267,133 +267,175 @@ const AdminDashboard = () => {
 
                     <button onClick={handleCreateProblem} className="w-full bg-purple-600 p-2 rounded">Create Problem</button>
                 </div>
-                {/* User Management */}
-                <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
-                    <h2 className="text-xl mb-4 text-yellow-400">User Management</h2>
-                    <table className="w-full text-left text-sm text-gray-400">
-                        <thead>
-                            <tr className="border-b border-gray-700">
-                                <th className="p-2">Name</th>
-                                <th className="p-2">Email</th>
-                                <th className="p-2">Role</th>
-                                <th className="p-2">Assessments</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map(u => (
-                                <tr key={u._id} className="border-b border-gray-800">
-                                    <td className="p-2">{u.name}</td>
-                                    <td className="p-2">{u.email}</td>
-                                    <td className="p-2">{u.role}</td>
-                                    <td className="p-2">
-                                        <button
-                                            onClick={() => setSelectedUserForProgress(u)}
-                                            className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs"
-                                        >
-                                            View Progress
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    <button onClick={loadData} className="mt-4 text-sm text-blue-400 underline">Refresh Data</button>
-                </div>
             </div>
 
-            {/* User Progress Modal */}
-            {selectedUserForProgress && (
-                <div className="fixed inset-0 z-40 bg-black bg-opacity-90 flex items-center justify-center p-8">
-                    <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                            <h2 className="text-xl font-bold text-white">{selectedUserForProgress.name} - Assessment Progress</h2>
-                            <button onClick={() => setSelectedUserForProgress(null)} className="text-gray-400 hover:text-white text-2xl">×</button>
-                        </div>
-                        <div className="p-6 overflow-y-auto">
-                            <table className="w-full text-left text-sm text-gray-400">
-                                <thead>
-                                    <tr className="border-b border-gray-700">
-                                        <th className="p-2">Assessment</th>
-                                        <th className="p-2">Status</th>
-                                        <th className="p-2">Score</th>
-                                        <th className="p-2">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {assessments.map(assess => {
-                                        // Find submission for this user and assessment
-                                        const sub = submissions.find(s => s.user === selectedUserForProgress._id && s.assessment === assess._id);
-                                        const status = sub ? sub.status : 'NOT_STARTED';
+            {/* Assessment Management Table */}
+            <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
+                <h2 className="text-xl mb-4 text-green-400">Assessment Management</h2>
+                <table className="w-full text-left text-sm text-gray-400">
+                    <thead>
+                        <tr className="border-b border-gray-700">
+                            <th className="p-2">Title</th>
+                            <th className="p-2">Problems Count</th>
+                            <th className="p-2">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {assessments.map(a => (
+                            <tr key={a._id} className="border-b border-gray-800">
+                                <td className="p-2">{a.title}</td>
+                                <td className="p-2">{a.problems ? a.problems.length : 0}</td>
+                                <td className="p-2 space-x-2">
+                                    <button
+                                        onClick={() => startEditAssessment(a)}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-xs"
+                                    >
+                                        Edit
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteAssessment(a._id)}
+                                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                                    >
+                                        Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
 
-                                        return (
-                                            <tr key={assess._id} className="border-b border-gray-700">
-                                                <td className="p-2 text-white font-bold">{assess.title}</td>
-                                                <td className="p-2">
-                                                    <span className={`px-2 py-1 rounded text-xs ${status === 'SUBMITTED' ? 'bg-green-900 text-green-300' : 'bg-gray-700'}`}>
-                                                        {status}
-                                                    </span>
-                                                </td>
-                                                <td className="p-2">{sub ? sub.finalScore + '%' : '-'}</td>
-                                                <td className="p-2 space-x-2">
-                                                    {status === 'SUBMITTED' && sub && (
-                                                        <>
-                                                            <button
-                                                                onClick={() => handleViewSubmission(sub)}
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
-                                                            >
-                                                                View Code
-                                                            </button>
-                                                            <button
-                                                                onClick={() => resetSubmission(sub._id)}
-                                                                className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
-                                                            >
-                                                                Reset
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* View Submission Modal */}
-            {viewSubmission && submissionDetails && (
-                <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-8">
-                    <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
-                        <div className="flex justify-between items-center p-4 border-b border-gray-700">
-                            <h2 className="text-xl font-bold text-white">Submission Review</h2>
-                            <button onClick={() => setViewSubmission(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
-                        </div>
-                        <div className="flex-grow overflow-y-auto p-6 md:grid md:grid-cols-2 gap-4">
-                            <div>
-                                <h3 className="text-lg font-bold text-blue-400 mb-2">Details</h3>
-                                <p><span className="text-gray-400">Status:</span> {submissionDetails.status}</p>
-                                <p><span className="text-gray-400">Score:</span> {submissionDetails.finalScore}%</p>
-                                <p><span className="text-gray-400">Violations:</span> {submissionDetails.violationCount}</p>
-                                <p><span className="text-gray-400">Submitted:</span> {new Date(submissionDetails.submittedAt).toLocaleString()}</p>
-                            </div>
-                            <div className="col-span-2 mt-4">
-                                <h3 className="text-lg font-bold text-green-400 mb-2">Code Answers</h3>
-                                {submissionDetails.answers.map((ans, idx) => (
-                                    <div key={idx} className="mb-6 bg-black p-4 rounded border border-gray-700">
-                                        <div className="text-sm text-gray-500 mb-2">Problem ID: {ans.problem}</div>
-                                        <pre className="font-mono text-sm text-gray-300 overflow-x-auto">
-                                            {ans.code}
-                                        </pre>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* User Management */}
+            <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
+                <h2 className="text-xl mb-4 text-yellow-400">User Management</h2>
+                <table className="w-full text-left text-sm text-gray-400">
+                    <thead>
+                        <tr className="border-b border-gray-700">
+                            <th className="p-2">Name</th>
+                            <th className="p-2">Email</th>
+                            <th className="p-2">Role</th>
+                            <th className="p-2">Assessments</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {users.map(u => (
+                            <tr key={u._id} className="border-b border-gray-800">
+                                <td className="p-2">{u.name}</td>
+                                <td className="p-2">{u.email}</td>
+                                <td className="p-2">{u.role}</td>
+                                <td className="p-2">
+                                    <button
+                                        onClick={() => setSelectedUserForProgress(u)}
+                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs"
+                                    >
+                                        View Progress
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <button onClick={loadData} className="mt-4 text-sm text-blue-400 underline">Refresh Data</button>
+            </div>
         </div>
+
+            {/* User Progress Modal */ }
+    {
+        selectedUserForProgress && (
+            <div className="fixed inset-0 z-40 bg-black bg-opacity-90 flex items-center justify-center p-8">
+                <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+                    <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                        <h2 className="text-xl font-bold text-white">{selectedUserForProgress.name} - Assessment Progress</h2>
+                        <button onClick={() => setSelectedUserForProgress(null)} className="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    <div className="p-6 overflow-y-auto">
+                        <table className="w-full text-left text-sm text-gray-400">
+                            <thead>
+                                <tr className="border-b border-gray-700">
+                                    <th className="p-2">Assessment</th>
+                                    <th className="p-2">Status</th>
+                                    <th className="p-2">Score</th>
+                                    <th className="p-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {assessments.map(assess => {
+                                    // Find submission for this user and assessment
+                                    const sub = submissions.find(s => s.user === selectedUserForProgress._id && s.assessment === assess._id);
+                                    const status = sub ? sub.status : 'NOT_STARTED';
+
+                                    return (
+                                        <tr key={assess._id} className="border-b border-gray-700">
+                                            <td className="p-2 text-white font-bold">{assess.title}</td>
+                                            <td className="p-2">
+                                                <span className={`px-2 py-1 rounded text-xs ${status === 'SUBMITTED' ? 'bg-green-900 text-green-300' : 'bg-gray-700'}`}>
+                                                    {status}
+                                                </span>
+                                            </td>
+                                            <td className="p-2">{sub ? sub.finalScore + '%' : '-'}</td>
+                                            <td className="p-2 space-x-2">
+                                                {status === 'SUBMITTED' && sub && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleViewSubmission(sub)}
+                                                            className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                                                        >
+                                                            View Code
+                                                        </button>
+                                                        <button
+                                                            onClick={() => resetSubmission(sub._id)}
+                                                            className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                                                        >
+                                                            Reset
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    {/* View Submission Modal */ }
+    {
+        viewSubmission && submissionDetails && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-90 flex items-center justify-center p-8">
+                <div className="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+                    <div className="flex justify-between items-center p-4 border-b border-gray-700">
+                        <h2 className="text-xl font-bold text-white">Submission Review</h2>
+                        <button onClick={() => setViewSubmission(false)} className="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    <div className="flex-grow overflow-y-auto p-6 md:grid md:grid-cols-2 gap-4">
+                        <div>
+                            <h3 className="text-lg font-bold text-blue-400 mb-2">Details</h3>
+                            <p><span className="text-gray-400">Status:</span> {submissionDetails.status}</p>
+                            <p><span className="text-gray-400">Score:</span> {submissionDetails.finalScore}%</p>
+                            <p><span className="text-gray-400">Violations:</span> {submissionDetails.violationCount}</p>
+                            <p><span className="text-gray-400">Submitted:</span> {new Date(submissionDetails.submittedAt).toLocaleString()}</p>
+                        </div>
+                        <div className="col-span-2 mt-4">
+                            <h3 className="text-lg font-bold text-green-400 mb-2">Code Answers</h3>
+                            {submissionDetails.answers.map((ans, idx) => (
+                                <div key={idx} className="mb-6 bg-black p-4 rounded border border-gray-700">
+                                    <div className="text-sm text-gray-500 mb-2">Problem ID: {ans.problem}</div>
+                                    <pre className="font-mono text-sm text-gray-300 overflow-x-auto">
+                                        {ans.code}
+                                    </pre>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+        </div >
     );
 };
 
