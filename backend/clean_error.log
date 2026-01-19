@@ -1,0 +1,19 @@
+C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongodb\lib\connection_string.js:272
+        throw new error_1.MongoParseError(`${optionWord} ${Array.from(unsupportedOptions).join(', ')} ${isOrAre} not supported`);
+              ^
+
+MongoParseError: options usenewurlparser, useunifiedtopology are not supported
+    at parseOptions (C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongodb\lib\connection_string.js:272:15)
+    at new MongoClient (C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongodb\lib\mongo_client.js:67:61)
+    at NativeConnection.createClient (C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongoose\lib\drivers\node-mongodb-native\connection.js:334:14)
+    at NativeConnection.openUri (C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongoose\lib\connection.js:1075:34)
+    at Mongoose.connect (C:\Projects\assessments\java-assessment-platform\backend\node_modules\mongoose\lib\mongoose.js:451:15)
+    at seed (C:\Projects\assessments\java-assessment-platform\backend\seed.js:8:20)
+    at Object.<anonymous> (C:\Projects\assessments\java-assessment-platform\backend\seed.js:38:1)
+    at Module._compile (node:internal/modules/cjs/loader:1738:14)
+    at Object..js (node:internal/modules/cjs/loader:1871:10)
+    at Module.load (node:internal/modules/cjs/loader:1470:32) {
+  errorLabelSet: Set(0) {}
+}
+
+Node.js v24.7.0
