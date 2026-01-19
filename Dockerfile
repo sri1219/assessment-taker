@@ -19,5 +19,5 @@ RUN npm install
 # Expose the port
 EXPOSE 5000
 
-# Start the server
-CMD ["node", "server_memory.js"]
+# Start the server (Production)
+CMD ["node", "server.js"]
