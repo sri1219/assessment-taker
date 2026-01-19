@@ -22,6 +22,8 @@ const AssessmentRunner = () => {
     const [isLocked, setIsLocked] = useState(false);
     const [showSubmitModal, setShowSubmitModal] = useState(false);
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
     useEffect(() => {
         const fetchAssessment = async () => {
             try {
@@ -84,6 +86,7 @@ const AssessmentRunner = () => {
     };
 
     const confirmSubmit = async () => {
+        setIsSubmitting(true);
         try {
             const formattedAnswers = Object.keys(answers).map(k => ({
                 problem: k,
@@ -101,6 +104,7 @@ const AssessmentRunner = () => {
         } catch (e) {
             alert('Submission Failed: ' + (e.response?.data?.error || e.message));
             setShowSubmitModal(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -177,14 +181,23 @@ const AssessmentRunner = () => {
                                     <button
                                         onClick={() => setShowSubmitModal(false)}
                                         className="px-4 py-2 rounded bg-gray-600 hover:bg-gray-500"
+                                        disabled={isSubmitting}
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         onClick={confirmSubmit}
-                                        className="px-4 py-2 rounded bg-red-600 hover:bg-red-700 font-bold"
+                                        disabled={isSubmitting}
+                                        className={`px-4 py-2 rounded font-bold flex items-center gap-2 ${isSubmitting ? 'bg-red-800 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
                                     >
-                                        Submit
+                                        {isSubmitting ? (
+                                            <>
+                                                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                                Submitting...
+                                            </>
+                                        ) : (
+                                            'Submit'
+                                        )}
                                     </button>
                                 </div>
                             </div>
