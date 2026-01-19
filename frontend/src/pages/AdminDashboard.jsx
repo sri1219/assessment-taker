@@ -23,6 +23,7 @@ const AdminDashboard = () => {
     const [assessments, setAssessments] = useState([]);
     const [submissions, setSubmissions] = useState([]);
     const [selectedUserForProgress, setSelectedUserForProgress] = useState(null);
+    const [editingAssessment, setEditingAssessment] = useState(null); // Track editing state
 
     // Review Modal State
     const [viewSubmission, setViewSubmission] = useState(null); // The submission object to view
@@ -118,16 +119,60 @@ const AdminDashboard = () => {
 
     const handleCreateAssessment = async () => {
         try {
-            await axios.post(`${API_BASE_URL}/assessments`, {
-                title: assessTitle,
-                problems: selectedProblems
-            });
-            alert('Assessment Created');
+            if (editingAssessment) {
+                // UPDATE Mode
+                await axios.put(`${API_BASE_URL}/assessments/${editingAssessment._id}`, {
+                    title: assessTitle,
+                    problems: selectedProblems
+                });
+                alert('Assessment Updated');
+                setEditingAssessment(null);
+            } else {
+                // CREATE Mode
+                await axios.post(`${API_BASE_URL}/assessments`, {
+                    title: assessTitle,
+                    problems: selectedProblems
+                });
+                alert('Assessment Created');
+            }
             setAssessTitle('');
             setSelectedProblems([]);
+            loadAssessments(); // Refresh list
         } catch (e) {
-            alert('Error creating assessment');
+            alert('Error saving assessment');
         }
+    };
+
+    const handleDeleteAssessment = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this assessment?')) return;
+        try {
+            await axios.delete(`${API_BASE_URL}/assessments/${id}`);
+            alert('Assessment Deleted');
+            loadAssessments();
+        } catch (e) {
+            alert('Error deleting assessment');
+        }
+    };
+
+    const startEditAssessment = (assess) => {
+        setEditingAssessment(assess);
+        setAssessTitle(assess.title);
+        // Map problem objects to IDs if necessary, assuming populate hasn't happened or backend sends IDs
+        // Backend GET / returns objects if populated? Let's check. 
+        // Assessment.find() usually refs. If not populated, it's IDs. 
+        // My backend GET / route does NOT populate problems. So it's IDs. Good.
+        // Wait, if I populated them in previous step? No, GET / select -createdBy.
+        // Wait, GET /:id populates. GET / does not.
+        // Actually, if it's an array of objects, map to _id. If permissions issue, handle safely.
+        // Let's assume it might be populated or not. Safest:
+        const problemIds = assess.problems.map(p => p._id || p);
+        setSelectedProblems(problemIds);
+    };
+
+    const cancelEdit = () => {
+        setEditingAssessment(null);
+        setAssessTitle('');
+        setSelectedProblems([]);
     };
 
     // --- ROLE GUARD ---
@@ -171,9 +216,9 @@ const AdminDashboard = () => {
                     </form>
                 </div>
 
-                {/* Create Assessment */}
+                {/* Create/Edit Assessment */}
                 <div className="bg-gray-800 p-6 rounded shadow">
-                    <h2 className="text-xl mb-4 text-green-400">Create Assessment</h2>
+                    <h2 className="text-xl mb-4 text-green-400">{editingAssessment ? 'Edit Assessment' : 'Create Assessment'}</h2>
                     <input className="w-full mb-4 p-2 bg-gray-700 rounded" placeholder="Assessment Title" value={assessTitle} onChange={e => setAssessTitle(e.target.value)} />
                     <div className="mb-4 max-h-40 overflow-y-auto">
                         {allProblems.map(p => (
@@ -191,7 +236,14 @@ const AdminDashboard = () => {
                             </div>
                         ))}
                     </div>
-                    <button onClick={handleCreateAssessment} className="w-full bg-green-600 p-2 rounded">Create Assessment</button>
+                    <div className="flex gap-2">
+                        <button onClick={handleCreateAssessment} className="flex-1 bg-green-600 p-2 rounded">
+                            {editingAssessment ? 'Update Assessment' : 'Create Assessment'}
+                        </button>
+                        {editingAssessment && (
+                            <button onClick={cancelEdit} className="bg-gray-600 px-4 rounded">Cancel</button>
+                        )}
+                    </div>
                 </div>
 
                 {/* Create Problem */}
