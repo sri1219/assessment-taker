@@ -60,22 +60,3 @@ cd frontend
 npm install
 npm start
 ```
-
-## 🔑 Default Credentials
-
-### Admin Login
-- **Email**: `admin@example.com`
-- **Password**: `admin`
-
-### Trainee Login
-- **Email**: `user@example.com`
-- **Password**: `user`
-
-## 🧪 Testing the Workflow
-1.  Login as **Admin**.
-2.  Create a strict **Assessment** with 1-2 Problems.
-3.  Logout and Login as **Trainee**.
-4.  Start the Assessment.
-5.  Try to paste code (it will be blocked!) or switch tabs (violation recorded).
-6.  Submit the assessment.
-7.  Login back as **Admin** to review the submission code and reset if necessary.
