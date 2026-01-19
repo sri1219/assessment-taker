@@ -74,9 +74,10 @@ public class Solution {
     const handleSubmit = async () => {
         setOutput('Submitting...');
         try {
+            const userId = user.id || user._id;
             const res = await axios.post(`${API_BASE} /execute/submit`, {
                 userId,
-                assignmentId: '65a...',
+                assignmentId: assessment._id,
                 code,
                 violationCount: violations.length
             });
