@@ -20,17 +20,19 @@ const TraineeDashboard = () => {
                 setAssessments(assessRes.data);
                 // Filter submissions for current user
                 if (user) {
-                    setSubmissions(subRes.data.filter(s => s.user === user._id));
+                    const userId = user.id || user._id; // Handle both id formats
+                    setSubmissions(subRes.data.filter(s => s.user === userId));
                 }
             } catch (e) {
                 console.error(e);
             }
         };
         if (user) fetchData();
-    }, [user?._id]);
+    }, [user]);
 
     const getStatus = (assessmentId) => {
-        const sub = submissions.find(s => s.assessment === assessmentId);
+        const userId = user?.id || user?._id;
+        const sub = submissions.find(s => s.assessment === assessmentId && s.user === userId); // Verify user match
         return sub ? sub.status : 'NOT_STARTED';
     };
 
@@ -42,7 +44,9 @@ const TraineeDashboard = () => {
         }
 
         try {
-            await axios.post(`${API_BASE_URL}/assessments/${id}/start`, { userId: user._id });
+            const userId = user.id || user._id;
+            console.log('Starting assessment for user:', userId);
+            await axios.post(`${API_BASE_URL}/assessments/${id}/start`, { userId }); // Send correct ID
             navigate(`/assessment/${id}`);
         } catch (e) {
             alert('Error starting assessment: ' + (e.response?.data?.error || e.message));
