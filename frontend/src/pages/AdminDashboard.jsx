@@ -359,7 +359,7 @@ const AdminDashboard = () => {
                                     <tbody>
                                         {assessments.map(assess => {
                                             // Find submission for this user and assessment
-                                            const sub = submissions.find(s => s.user === selectedUserForProgress._id && s.assessment === assess._id);
+                                            const sub = submissions.find(s => (s.user._id || s.user) === selectedUserForProgress._id && (s.assessment._id || s.assessment) === assess._id);
                                             const status = sub ? sub.status : 'NOT_STARTED';
 
                                             return (
