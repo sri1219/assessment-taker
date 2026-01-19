@@ -98,4 +98,29 @@ router.post('/:id/submit', async (req, res) => {
     }
 });
 
+// Update Assessment
+router.put('/:id', async (req, res) => {
+    try {
+        const { title, description, problems, isActive } = req.body;
+        const assessment = await Assessment.findByIdAndUpdate(
+            req.params.id,
+            { title, description, problems, isActive },
+            { new: true }
+        );
+        res.json(assessment);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Delete Assessment
+router.delete('/:id', async (req, res) => {
+    try {
+        await Assessment.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
