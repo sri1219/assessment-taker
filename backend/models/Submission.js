@@ -15,6 +15,8 @@ const SubmissionSchema = new mongoose.Schema({
     assessment: { type: mongoose.Schema.Types.ObjectId, ref: 'Assessment', required: true },
     status: { type: String, enum: ['IN_PROGRESS', 'SUBMITTED'], default: 'IN_PROGRESS' },
     answers: [AnswerSchema], // Collected answers
+    totalManualScore: { type: Number, default: 0 },
+    totalMaxScore: { type: Number, default: 0 },
     finalScore: { type: Number, default: 0 }, // Percent
     violationCount: { type: Number, default: 0 },
     startedAt: { type: Date, default: Date.now },

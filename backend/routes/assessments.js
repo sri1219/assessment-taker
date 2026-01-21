@@ -119,8 +119,15 @@ router.put('/:id', async (req, res) => {
 // Delete Assessment
 router.delete('/:id', async (req, res) => {
     try {
-        await Assessment.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Deleted successfully' });
+        const assessmentId = req.params.id;
+
+        // Cascade delete: Remove all submissions associated with this assessment
+        await Submission.deleteMany({ assessment: assessmentId });
+
+        // Delete the assessment itself
+        await Assessment.findByIdAndDelete(assessmentId);
+
+        res.json({ message: 'Assessment and associated submissions deleted successfully' });
     } catch (e) {
         res.status(500).json({ error: e.message });
     }

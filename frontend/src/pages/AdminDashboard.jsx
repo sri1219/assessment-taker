@@ -12,7 +12,7 @@ const AdminDashboard = () => {
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'trainee' });
 
     // Problem Creation State
-    const [problem, setProblem] = useState({ title: '', description: '', starterCode: '', testCases: [] });
+    const [problem, setProblem] = useState({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
     const [testCase, setTestCase] = useState({ input: '', expectedOutput: '' });
 
     // Assessment Creation State
@@ -24,10 +24,14 @@ const AdminDashboard = () => {
     const [submissions, setSubmissions] = useState([]);
     const [selectedUserForProgress, setSelectedUserForProgress] = useState(null);
     const [editingAssessment, setEditingAssessment] = useState(null); // Track editing state
+    const [editingProblem, setEditingProblem] = useState(null); // Track editing state
 
     // Review Modal State
     const [viewSubmission, setViewSubmission] = useState(null); // The submission object to view
     const [submissionDetails, setSubmissionDetails] = useState(null);
+
+    // Sorting State
+    const [submissionSort, setSubmissionSort] = useState({ key: 'submittedAt', direction: 'desc' });
 
     useEffect(() => {
         loadData();
@@ -92,20 +96,55 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleCreateProblem = async (e) => {
+    const handleSaveProblem = async (e) => {
         e.preventDefault();
         if (!problem.description || !problem.description.trim()) {
             alert('Description field is mandatory');
             return;
         }
         try {
-            await axios.post(`${API_BASE_URL}/problems`, problem);
-            alert('Problem Created');
-            setProblem({ title: '', description: '', starterCode: '', testCases: [] });
+            if (editingProblem) {
+                await axios.put(`${API_BASE_URL}/problems/${editingProblem._id}`, problem);
+                alert('Problem Updated');
+                setEditingProblem(null);
+            } else {
+                await axios.post(`${API_BASE_URL}/problems`, problem);
+                alert('Problem Created');
+            }
+            setProblem({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
             loadProblems();
         } catch (e) {
             console.error(e);
-            alert('Error creating problem: ' + (e.response?.data?.error || e.message));
+            alert('Error saving problem: ' + (e.response?.data?.error || e.message));
+        }
+    };
+
+    const startEditProblem = (p) => {
+        setEditingProblem(p);
+        setProblem({
+            title: p.title,
+            description: p.description,
+            starterCode: p.starterCode,
+            testCases: p.testCases,
+            totalMarks: p.totalMarks || 10
+        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const cancelEditProblem = () => {
+        setEditingProblem(null);
+        setProblem({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
+    };
+
+    const handleDeleteProblem = async (id) => {
+        if (!window.confirm('Are you sure? This problem will be removed from future assessments.')) return;
+        try {
+            await axios.delete(`${API_BASE_URL}/problems/${id}`);
+            alert('Problem Deleted');
+            loadProblems(); // Refresh problems list
+            loadAssessments(); // Refresh assessments count
+        } catch (e) {
+            alert('Error deleting problem: ' + (e.response?.data?.error || e.message));
         }
     };
 
@@ -216,18 +255,6 @@ const AdminDashboard = () => {
         try {
             const res = await axios.post(`${API_BASE_URL}/execute/run`, { code, input: '' });
 
-            // Handle new result format
-            // If backend executor returns success but output message contains "Error", it might be a runtime error.
-            // But we specifically rely on the 'error' field in response.
-            // Wait, we just verified executor returns { error: '...' } on failure/runtime error.
-
-            // Wait, previous step updated executor to return compiled: boolean.
-            // But /api/execute/run endpoint logic might not be passing that through directly?
-            // Need to check execute.js route.
-            // Assuming execute.js route effectively returns output/error as before but let's assume standard format.
-            // Actually, I should update the Executor route too if I want it to send `compiled` flag. 
-            // BUT, for now let's rely on 'error' string presence.
-
             const isSuccess = !res.data.error;
             const output = res.data.error
                 ? `Compilation/Runtime Error:\n${res.data.error}`
@@ -249,6 +276,39 @@ const AdminDashboard = () => {
             setSubmissionDetails({ ...submissionDetails, answers: updatedAnswers });
         }
     };
+
+    const handleSortSubmissions = (key) => {
+        setSubmissionSort(prev => ({
+            key,
+            direction: prev.key === key && prev.direction === 'desc' ? 'asc' : 'desc'
+        }));
+    };
+
+    const sortedSubmissions = [...submissions]
+        .filter(s => s.assessment) // Hide submissions from deleted assessments
+        .sort((a, b) => {
+            let valA, valB;
+            if (submissionSort.key === 'user') {
+                valA = a.user?.name || '';
+                valB = b.user?.name || '';
+            } else if (submissionSort.key === 'assessment') {
+                valA = a.assessment?.title || '';
+                valB = b.assessment?.title || '';
+            } else if (submissionSort.key === 'finalScore') {
+                valA = a.finalScore || 0;
+                valB = b.finalScore || 0;
+            } else if (submissionSort.key === 'submittedAt') {
+                valA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+                valB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+            } else {
+                valA = a[submissionSort.key];
+                valB = b[submissionSort.key];
+            }
+
+            if (valA < valB) return submissionSort.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return submissionSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
 
     // --- ROLE GUARD ---
     useEffect(() => {
@@ -323,24 +383,70 @@ const AdminDashboard = () => {
 
                 {/* Create Problem */}
                 <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
-                    <h2 className="text-xl mb-4 text-purple-400">Create Problem</h2>
-                    <input className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Title" value={problem.title} onChange={e => setProblem({ ...problem, title: e.target.value })} required />
+                    <div className="grid grid-cols-2 gap-4 mb-2">
+                        <input className="p-2 bg-gray-700 rounded" placeholder="Title" value={problem.title} onChange={e => setProblem({ ...problem, title: e.target.value })} required />
+                        <input
+                            className="p-2 bg-gray-700 rounded"
+                            type="number"
+                            placeholder="Total Marks"
+                            value={problem.totalMarks}
+                            onChange={e => setProblem({ ...problem, totalMarks: parseInt(e.target.value) || 0 })}
+                            required
+                        />
+                    </div>
                     <textarea className="w-full mb-2 p-2 bg-gray-700 rounded" placeholder="Description" rows="3" value={problem.description} onChange={e => setProblem({ ...problem, description: e.target.value })} required />
                     <textarea className="w-full mb-2 p-2 bg-gray-700 rounded font-mono" placeholder="Starter Code" rows="3" value={problem.starterCode} onChange={e => setProblem({ ...problem, starterCode: e.target.value })} />
 
-                    <div className="bg-gray-700 p-4 rounded mb-4">
-                        <h3 className="text-sm font-bold mb-2">Add Test Case</h3>
-                        <div className="flex gap-2">
-                            <input className="flex-1 p-2 bg-gray-600 rounded" placeholder="Input" value={testCase.input} onChange={e => setTestCase({ ...testCase, input: e.target.value })} />
-                            <input className="flex-1 p-2 bg-gray-600 rounded" placeholder="Expected Output" value={testCase.expectedOutput} onChange={e => setTestCase({ ...testCase, expectedOutput: e.target.value })} />
-                            <button onClick={addTestCase} type="button" className="bg-purple-600 px-4 rounded">Add</button>
-                        </div>
-                        <div className="mt-2 text-sm text-gray-300">
-                            {problem.testCases.length} Test Cases Added
-                        </div>
+                    <div className="flex gap-2">
+                        <button onClick={handleSaveProblem} className="flex-1 bg-purple-600 p-2 rounded">
+                            {editingProblem ? 'Update Problem' : 'Create Problem'}
+                        </button>
+                        {editingProblem && (
+                            <button onClick={cancelEditProblem} className="bg-gray-600 px-4 rounded">Cancel</button>
+                        )}
                     </div>
+                </div>
 
-                    <button onClick={handleCreateProblem} className="w-full bg-purple-600 p-2 rounded">Create Problem</button>
+                {/* Manage Problems List */}
+                <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
+                    <h2 className="text-xl mb-4 text-purple-400">Manage Problems</h2>
+                    <div className="max-h-60 overflow-y-auto border border-gray-700 rounded p-2">
+                        {allProblems.length === 0 ? (
+                            <p className="text-gray-500 text-center">No problems found.</p>
+                        ) : (
+                            <table className="w-full text-left text-sm text-gray-400">
+                                <thead>
+                                    <tr className="border-b border-gray-700 sticky top-0 bg-gray-800">
+                                        <th className="p-2">Title</th>
+                                        <th className="p-2">Total Marks</th>
+                                        <th className="p-2 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allProblems.map(p => (
+                                        <tr key={p._id} className="border-b border-gray-700 hover:bg-gray-700">
+                                            <td className="p-2">{p.title}</td>
+                                            <td className="p-2 font-bold text-purple-400">{p.totalMarks || 10}</td>
+                                            <td className="p-2 text-right space-x-2">
+                                                <button
+                                                    onClick={() => startEditProblem(p)}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteProblem(p._id)}
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -378,6 +484,51 @@ const AdminDashboard = () => {
                         ))}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Dashboard Submissions Overview */}
+            <div className="bg-gray-800 p-6 rounded shadow md:col-span-2">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl text-pink-400 font-bold">Total Submissions: {sortedSubmissions.length}</h2>
+                    <div className="text-xs text-gray-400">Sort by clicking column headers</div>
+                </div>
+                <div className="overflow-x-auto max-h-96">
+                    <table className="w-full text-left text-sm text-gray-400">
+                        <thead className="sticky top-0 bg-gray-800">
+                            <tr className="border-b border-gray-700">
+                                <th className="p-2 cursor-pointer hover:text-white" onClick={() => handleSortSubmissions('user')}>Trainee ↕</th>
+                                <th className="p-2 cursor-pointer hover:text-white" onClick={() => handleSortSubmissions('assessment')}>Assessment ↕</th>
+                                <th className="p-2 cursor-pointer hover:text-white" onClick={() => handleSortSubmissions('finalScore')}>Final Score % ↕</th>
+                                <th className="p-2">Marks</th>
+                                <th className="p-2 cursor-pointer hover:text-white" onClick={() => handleSortSubmissions('submittedAt')}>Date ↕</th>
+                                <th className="p-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {sortedSubmissions.map(s => (
+                                <tr key={s._id} className="border-b border-gray-800 hover:bg-gray-700">
+                                    <td className="p-2 text-white">{s.user?.name || 'Unknown'}</td>
+                                    <td className="p-2">{s.assessment?.title || 'Deleted'}</td>
+                                    <td className="p-2">
+                                        <span className={`font-bold ${s.finalScore >= 70 ? 'text-green-400' : s.finalScore >= 40 ? 'text-yellow-400' : 'text-red-400'}`}>
+                                            {s.finalScore}%
+                                        </span>
+                                    </td>
+                                    <td className="p-2 text-xs text-gray-500">{s.totalManualScore}/{s.totalMaxScore}</td>
+                                    <td className="p-2">{s.submittedAt ? new Date(s.submittedAt).toLocaleDateString() : 'N/A'}</td>
+                                    <td className="p-2">
+                                        <button
+                                            onClick={() => handleViewSubmission(s)}
+                                            className="bg-purple-600 hover:bg-purple-700 text-white px-2 py-1 rounded text-xs"
+                                        >
+                                            Review
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* User Management */}
@@ -490,9 +641,16 @@ const AdminDashboard = () => {
                                 <div>
                                     <h3 className="text-lg font-bold text-blue-400 mb-2">Details</h3>
                                     <p><span className="text-gray-400">Status:</span> {submissionDetails.status}</p>
-                                    <p><span className="text-gray-400">Score:</span> {submissionDetails.finalScore}%</p>
-                                    <p><span className="text-gray-400">Violations:</span> {submissionDetails.violationCount}</p>
-                                    <p><span className="text-gray-400">Submitted:</span> {new Date(submissionDetails.submittedAt).toLocaleString()}</p>
+                                    <p className="text-xl mt-2 font-bold mb-1">
+                                        <span className="text-gray-300">Final Score:</span>
+                                        <span className="text-green-400 ml-2">{submissionDetails.finalScore}%</span>
+                                    </p>
+                                    <div className="bg-gray-700 p-2 rounded border border-gray-600 inline-block">
+                                        <p className="text-sm"><span className="text-gray-400">Marks Obtained:</span> <span className="text-white font-bold">{submissionDetails.totalManualScore || 0}</span></p>
+                                        <p className="text-sm"><span className="text-gray-400">Max Possible:</span> <span className="text-white font-bold">{submissionDetails.totalMaxScore || 0}</span></p>
+                                    </div>
+                                    <p className="mt-2 text-sm"><span className="text-gray-400">Violations:</span> {submissionDetails.violationCount}</p>
+                                    <p className="text-sm"><span className="text-gray-400">Submitted:</span> {new Date(submissionDetails.submittedAt).toLocaleString()}</p>
                                 </div>
                                 <div className="col-span-2 mt-4">
                                     <div className="flex justify-between items-center mb-4">
@@ -538,12 +696,15 @@ const AdminDashboard = () => {
 
                                             <div className="flex items-center gap-4 bg-gray-800 p-3 rounded">
                                                 <label className="text-sm text-gray-300 font-bold">Manual Score:</label>
-                                                <input
-                                                    type="number"
-                                                    className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1 w-24"
-                                                    defaultValue={ans.manualScore || 0}
-                                                    onChange={(e) => handleGradeChange(ans.problem._id || ans.problem, e.target.value)}
-                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <input
+                                                        type="number"
+                                                        className="bg-gray-700 text-white border border-gray-600 rounded px-3 py-1 w-24 text-center font-bold"
+                                                        defaultValue={ans.manualScore || 0}
+                                                        onChange={(e) => handleGradeChange(ans.problem._id || ans.problem, e.target.value)}
+                                                    />
+                                                    <span className="text-gray-400 font-bold">/ {ans.problem.totalMarks || 10}</span>
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
