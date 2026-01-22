@@ -45,6 +45,8 @@ router.put('/:id/grade', async (req, res) => {
             submission.finalScore = 0;
         }
 
+        console.log(`Grading Submission ${submission._id}: Obtained=${totalManualScore}, Max=${totalMaxScore}, Final=${submission.finalScore}%`);
+
         await submission.save();
         res.json(submission);
     } catch (e) {
