@@ -8,8 +8,8 @@ const { executeJava } = require('../utils/executor');
 // Create Assessment
 router.post('/', async (req, res) => {
     try {
-        const { title, description, problems, createdBy } = req.body;
-        const assessment = new Assessment({ title, description, problems, createdBy });
+        const { title, description, problems, duration, createdBy } = req.body;
+        const assessment = new Assessment({ title, description, problems, duration, createdBy });
         await assessment.save();
         res.json(assessment);
     } catch (e) {
@@ -104,10 +104,10 @@ router.post('/:id/submit', async (req, res) => {
 // Update Assessment
 router.put('/:id', async (req, res) => {
     try {
-        const { title, description, problems, isActive } = req.body;
+        const { title, description, problems, duration, isActive } = req.body;
         const assessment = await Assessment.findByIdAndUpdate(
             req.params.id,
-            { title, description, problems, isActive },
+            { title, description, problems, duration, isActive },
             { new: true }
         );
         res.json(assessment);

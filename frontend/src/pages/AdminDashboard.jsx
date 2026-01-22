@@ -17,6 +17,7 @@ const AdminDashboard = () => {
 
     // Assessment Creation State
     const [assessTitle, setAssessTitle] = useState('');
+    const [assessDuration, setAssessDuration] = useState(60);
     const [selectedProblems, setSelectedProblems] = useState([]);
     const [allProblems, setAllProblems] = useState([]);
     const [users, setUsers] = useState([]);
@@ -161,7 +162,8 @@ const AdminDashboard = () => {
                 // UPDATE Mode
                 await axios.put(`${API_BASE_URL}/assessments/${editingAssessment._id}`, {
                     title: assessTitle,
-                    problems: selectedProblems
+                    problems: selectedProblems,
+                    duration: assessDuration
                 });
                 alert('Assessment Updated');
                 setEditingAssessment(null);
@@ -169,11 +171,13 @@ const AdminDashboard = () => {
                 // CREATE Mode
                 await axios.post(`${API_BASE_URL}/assessments`, {
                     title: assessTitle,
-                    problems: selectedProblems
+                    problems: selectedProblems,
+                    duration: assessDuration
                 });
                 alert('Assessment Created');
             }
             setAssessTitle('');
+            setAssessDuration(60);
             setSelectedProblems([]);
             loadAssessments(); // Refresh list
         } catch (e) {
@@ -197,6 +201,7 @@ const AdminDashboard = () => {
         console.log('Editing assessment:', assess);
         setEditingAssessment(assess);
         setAssessTitle(assess.title);
+        setAssessDuration(assess.duration || 60);
         // Safely handle potential missing problems array
         const problemIds = (assess.problems || []).map(p => p._id || p);
         setSelectedProblems(problemIds);
@@ -208,6 +213,7 @@ const AdminDashboard = () => {
     const cancelEdit = () => {
         setEditingAssessment(null);
         setAssessTitle('');
+        setAssessDuration(60);
         setSelectedProblems([]);
     };
 
@@ -603,6 +609,10 @@ const AdminDashboard = () => {
                                     </h2>
                                     <div className="space-y-4">
                                         <input className="input-field" placeholder="Title (e.g., Weekly Challenge)" value={assessTitle} onChange={e => setAssessTitle(e.target.value)} />
+                                        <div className="space-y-2 max-h-60 overflow-y-auto p-4 bg-black/20 rounded-2xl border border-white/5">
+                                            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1 ml-1">ESTIMATED DURATION (MINS)</p>
+                                            <input type="number" className="input-field bg-transparent border-white/10" value={assessDuration} onChange={e => setAssessDuration(parseInt(e.target.value))} />
+                                        </div>
                                         <div className="space-y-2 max-h-60 overflow-y-auto p-4 bg-black/20 rounded-2xl border border-white/5">
                                             <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Select Problems</p>
                                             {allProblems.map(p => (
