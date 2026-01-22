@@ -654,6 +654,7 @@ const AdminDashboard = () => {
                                             <tr className="border-b border-white/5">
                                                 <th className="p-5 text-gray-500 font-semibold text-xs uppercase">Title</th>
                                                 <th className="p-5 text-gray-500 font-semibold text-xs uppercase">Problems</th>
+                                                <th className="p-5 text-gray-500 font-semibold text-xs uppercase text-right">Duration</th>
                                                 <th className="p-5 text-gray-500 font-semibold text-xs uppercase text-right">Actions</th>
                                             </tr>
                                         </thead>
@@ -662,6 +663,7 @@ const AdminDashboard = () => {
                                                 <tr key={a._id} className="group hover:bg-white/[0.02] transition-colors">
                                                     <td className="p-5 font-bold">{a.title}</td>
                                                     <td className="p-5 font-mono text-xs text-indigo-400">{(a.problems || []).length} modules</td>
+                                                    <td className="p-5 text-right font-bold text-indigo-400">{a.duration || 60}m</td>
                                                     <td className="p-5 text-right flex justify-end gap-2">
                                                         <button onClick={() => startEditAssessment(a)} className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all">
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
