@@ -12,8 +12,15 @@ const AdminDashboard = () => {
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'trainee' });
 
     // Problem Creation State
-    const [problem, setProblem] = useState({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
+    const [problem, setProblem] = useState({ title: '', description: '', language: 'java', starterCode: '', testCases: [], totalMarks: 10 });
     const [testCase, setTestCase] = useState({ input: '', expectedOutput: '' });
+
+    // Starter code templates
+    const starterCodeTemplates = {
+        java: 'public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}',
+        javascript: '// Write your code here\nconst readline = require("readline");\nconst rl = readline.createInterface({\n    input: process.stdin,\n    output: process.stdout\n});\n\nrl.on("line", (line) => {\n    console.log("You entered:", line);\n});',
+        typescript: '// Write your code here\nimport * as readline from "readline";\n\nconst rl = readline.createInterface({\n    input: process.stdin,\n    output: process.stdout\n});\n\nrl.on("line", (line: string) => {\n    console.log("You entered:", line);\n});'
+    };
 
     // Assessment Creation State
     const [assessTitle, setAssessTitle] = useState('');
@@ -114,7 +121,7 @@ const AdminDashboard = () => {
                 await axios.post(`${API_BASE_URL}/problems`, problem);
                 alert('Problem Created');
             }
-            setProblem({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
+            setProblem({ title: '', description: '', language: 'java', starterCode: '', testCases: [], totalMarks: 10 });
             loadProblems();
         } catch (e) {
             console.error(e);
@@ -127,6 +134,7 @@ const AdminDashboard = () => {
         setProblem({
             title: p.title,
             description: p.description,
+            language: p.language || 'java',
             starterCode: p.starterCode,
             testCases: p.testCases,
             totalMarks: p.totalMarks || 10
@@ -136,7 +144,15 @@ const AdminDashboard = () => {
 
     const cancelEditProblem = () => {
         setEditingProblem(null);
-        setProblem({ title: '', description: '', starterCode: '', testCases: [], totalMarks: 10 });
+        setProblem({ title: '', description: '', language: 'java', starterCode: '', testCases: [], totalMarks: 10 });
+    };
+
+    const handleLanguageChange = (lang) => {
+        setProblem({
+            ...problem,
+            language: lang,
+            starterCode: starterCodeTemplates[lang] || ''
+        });
     };
 
     const handleDeleteProblem = async (id) => {
@@ -254,14 +270,18 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleAdminCompile = async (idx, code) => {
+    const handleAdminCompile = async (idx, code, language) => {
         // Optimistic UI update
         const updatedAnswers = [...submissionDetails.answers];
         updatedAnswers[idx] = { ...updatedAnswers[idx], compileOutput: 'Compiling...', isCompiled: undefined };
         setSubmissionDetails({ ...submissionDetails, answers: updatedAnswers });
 
         try {
-            const res = await axios.post(`${API_BASE_URL}/execute/run`, { code, input: '' });
+            const res = await axios.post(`${API_BASE_URL}/execute/run`, {
+                code,
+                input: '',
+                language: language || 'java'
+            });
 
             const isSuccess = !res.data.error;
             const output = res.data.error
@@ -552,6 +572,19 @@ const AdminDashboard = () => {
                                     <form onSubmit={handleSaveProblem} className="space-y-4">
                                         <input className="input-field" placeholder="Problem Title" value={problem.title} onChange={e => setProblem({ ...problem, title: e.target.value })} required />
                                         <textarea className="input-field min-h-[100px]" placeholder="Detailed Description" value={problem.description} onChange={e => setProblem({ ...problem, description: e.target.value })} required />
+                                        <div>
+                                            <label className="text-xs text-gray-500 font-bold mb-1 block ml-1">LANGUAGE</label>
+                                            <select
+                                                className="input-field appearance-none bg-black/20"
+                                                value={problem.language}
+                                                onChange={e => handleLanguageChange(e.target.value)}
+                                                required
+                                            >
+                                                <option value="java">Java</option>
+                                                <option value="javascript">JavaScript</option>
+                                                <option value="typescript">TypeScript</option>
+                                            </select>
+                                        </div>
                                         <textarea className="input-field font-mono text-xs min-h-[150px]" placeholder="Starter Code" value={problem.starterCode} onChange={e => setProblem({ ...problem, starterCode: e.target.value })} required />
                                         <div>
                                             <label className="text-xs text-gray-500 font-bold mb-1 block ml-1">MAX MARKS</label>
@@ -581,7 +614,10 @@ const AdminDashboard = () => {
                                             <div key={p._id} className="flex items-center justify-between p-4 rounded-2xl hover:bg-white/5 transition-all group">
                                                 <div>
                                                     <h4 className="font-bold mb-1 group-hover:text-indigo-400 transition-colors">{p.title}</h4>
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">{p.totalMarks} Points</span>
+                                                    <div className="flex gap-2">
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 bg-white/5 px-2 py-0.5 rounded border border-white/5">{p.totalMarks} Points</span>
+                                                        <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${p.language === 'java' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : p.language === 'javascript' ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : 'bg-blue-500/10 text-blue-400 border-blue-500/20'}`}>{p.language || 'java'}</span>
+                                                    </div>
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button onClick={() => startEditProblem(p)} className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500 hover:text-white transition-all">
@@ -827,7 +863,7 @@ const AdminDashboard = () => {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    onClick={() => handleAdminCompile(idx, ans.code)}
+                                                    onClick={() => handleAdminCompile(idx, ans.code, ans.problem.language)}
                                                     className="px-4 py-2 rounded-xl bg-blue-500/10 text-blue-400 hover:bg-blue-500 text-white transition-all text-xs font-bold border border-blue-500/20 flex items-center gap-2"
                                                 >
                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>

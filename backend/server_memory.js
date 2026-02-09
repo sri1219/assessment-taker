@@ -127,60 +127,47 @@ app.post('/api/submissions/:submissionId/delete', (req, res) => {
     }
 });
 
-// --- REAL EXECUTION ---
-app.post('/api/execute/run', (req, res) => {
-    const { code, input } = req.body;
-    const fileName = `Solution_${uuidv4()}.java`;
-    const filePath = path.join(__dirname, 'temp', fileName);
+// --- REAL EXECUTION (Multi-Language Support) ---
+const { executeJava, executeJS, executeTS } = require('./utils/executor');
 
-    if (!fs.existsSync(path.join(__dirname, 'temp'))) {
-        fs.mkdirSync(path.join(__dirname, 'temp'));
+app.post('/api/execute/run', async (req, res) => {
+    const { code, input, language = 'java' } = req.body;
+
+    // Security Check
+    const securityViolations = [
+        'Runtime.getRuntime',
+        'ProcessBuilder',
+        'require("child_process")',
+        'require("fs")',
+        'eval(',
+        'Function(',
+        '__dirname',
+        '__filename'
+    ];
+
+    const hasViolation = securityViolations.some(keyword => code.includes(keyword));
+    if (hasViolation) {
+        return res.json({ output: '', error: 'Security Violation: Restricted keywords detected.' });
     }
 
-    // Wrap code in Solution class if not already? 
-    // Assumption: User provides full class or we wrap. The starter code implies full class.
-    // However, the filename must match class name "Solution". 
-    // Java is strict. We must rename class to matched filename OR keep it simple.
-    // Hack: We'll force the class name to be 'Solution' and run it as such in a isolated folder?
-    // Easier: Write to 'Solution.java', compile, then rename/cleanup.
-    // BUT concurrent users will conflict on 'Solution.java'.
-    // Better: Use `Solution` class but in a unique temp folder per request.
-
-    const runId = uuidv4();
-    const tempDir = path.join(__dirname, 'temp', runId);
-    fs.mkdirSync(tempDir, { recursive: true });
-
-    const javaFile = path.join(tempDir, 'Solution.java');
-
-    fs.writeFileSync(javaFile, code);
-
-    // Compile and Run
-    const compileCmd = `javac "${javaFile}"`;
-
-    exec(compileCmd, (error, stdout, stderr) => {
-        if (error) {
-            // cleanup
-            fs.rmSync(tempDir, { recursive: true, force: true });
-            return res.json({ error: 'Compilation Error:\n' + stderr });
+    try {
+        let result;
+        switch (language.toLowerCase()) {
+            case 'javascript':
+                result = await executeJS(code, input || "");
+                break;
+            case 'typescript':
+                result = await executeTS(code, input || "");
+                break;
+            case 'java':
+            default:
+                result = await executeJava(code, input || "");
+                break;
         }
-
-        // Run
-        // Note: input needed via stdin
-        const runCmd = `java -cp "${tempDir}" Solution`;
-
-        const child = exec(runCmd, { timeout: 5000 }, (err, sout, serr) => {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-            if (err) {
-                return res.json({ error: 'Runtime Error:\n' + serr });
-            }
-            res.json({ output: sout.trim() });
-        });
-
-        if (input) {
-            child.stdin.write(input);
-            child.stdin.end();
-        }
-    });
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.listen(PORT, () => {
