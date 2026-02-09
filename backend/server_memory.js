@@ -19,6 +19,7 @@ const problems_seed = [
         _id: 'problem-1',
         title: 'Sum of Two Numbers',
         description: 'Write a program that takes two integers as input and prints their sum.',
+        language: 'java',
         starterCode: 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int a = scanner.nextInt();\n        int b = scanner.nextInt();\n        System.out.println(a + b);\n    }\n}',
         testCases: [{ input: '2 3', expectedOutput: '5' }, { input: '10 20', expectedOutput: '30' }]
     }
@@ -56,6 +57,18 @@ app.post('/api/problems', (req, res) => {
     const problem = { _id: uuidv4(), ...req.body };
     PROBLEMS.push(problem);
     res.json(problem);
+});
+app.put('/api/problems/:id', (req, res) => {
+    const idx = PROBLEMS.findIndex(p => p._id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Problem not found' });
+    PROBLEMS[idx] = { _id: req.params.id, ...req.body };
+    res.json(PROBLEMS[idx]);
+});
+app.delete('/api/problems/:id', (req, res) => {
+    const idx = PROBLEMS.findIndex(p => p._id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Problem not found' });
+    PROBLEMS.splice(idx, 1);
+    res.json({ message: 'Problem deleted' });
 });
 
 // --- ASSESSMENT ROUTES ---
