@@ -59,9 +59,16 @@ app.post('/api/problems', (req, res) => {
     res.json(problem);
 });
 app.put('/api/problems/:id', (req, res) => {
+    console.log('PUT /api/problems/:id called');
+    console.log('Problem ID:', req.params.id);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
     const idx = PROBLEMS.findIndex(p => p._id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Problem not found' });
+
     PROBLEMS[idx] = { _id: req.params.id, ...req.body };
+
+    console.log('Updated problem:', JSON.stringify(PROBLEMS[idx], null, 2));
     res.json(PROBLEMS[idx]);
 });
 app.delete('/api/problems/:id', (req, res) => {
