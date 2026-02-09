@@ -48,12 +48,12 @@ const executeCode = (code, input, command, args, fileName, compileStep = null) =
                 stderr += data.toString();
             });
 
-            // Timeout safety (5 seconds)
+            // Timeout safety (10 seconds for TypeScript compilation)
             const timeout = setTimeout(() => {
                 process.kill();
                 resolve({ compiled: true, output: stdout, error: 'Time Limit Exceeded' });
                 cleanup(dirPath);
-            }, 5000);
+            }, 10000);
 
             process.on('close', (code) => {
                 clearTimeout(timeout);
@@ -132,7 +132,8 @@ const executeJS = (jsCode, input) => {
  */
 const executeTS = (tsCode, input) => {
     const fileName = 'solution.ts';
-    return executeCode(tsCode, input, 'npx', ['ts-node', fileName], fileName);
+    // Use ts-node directly with --transpile-only for faster execution
+    return executeCode(tsCode, input, 'node', ['node_modules/.bin/ts-node', '--transpile-only', fileName], fileName);
 };
 
 const cleanup = (dirPath) => {
