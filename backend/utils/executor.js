@@ -132,8 +132,9 @@ const executeJS = (jsCode, input) => {
  */
 const executeTS = (tsCode, input) => {
     const fileName = 'solution.ts';
-    // Use ts-node directly with --transpile-only for faster execution
-    return executeCode(tsCode, input, 'node', ['node_modules/.bin/ts-node', '--transpile-only', fileName], fileName);
+    // Use absolute path to ts-node to ensure it's found from temp directories
+    const tsNodePath = path.resolve(__dirname, '..', 'node_modules', '.bin', 'ts-node');
+    return executeCode(tsCode, input, 'node', [tsNodePath, '--transpile-only', fileName], fileName);
 };
 
 const cleanup = (dirPath) => {
