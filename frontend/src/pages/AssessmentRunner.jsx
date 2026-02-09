@@ -87,7 +87,11 @@ const AssessmentRunner = () => {
         setOutput('Initializing environment...\nRunning sample case...');
         try {
             const sampleInput = problem.testCases?.[0]?.input || '';
-            const res = await axios.post(`${API_BASE_URL}/execute/run`, { code, input: sampleInput });
+            const res = await axios.post(`${API_BASE_URL}/execute/run`, {
+                code,
+                input: sampleInput,
+                language: problem.language || 'java'
+            });
             setOutput(res.data.error ? `>> ERROR <<\n${res.data.error}` : `>> EXECUTION SUCCESS <<\n\n${res.data.output}`);
         } catch (e) {
             setOutput('>> SYSTEM FAILURE <<\nUnable to reach execution server.');
@@ -252,7 +256,9 @@ const AssessmentRunner = () => {
                         <div className="h-12 flex items-center justify-between px-6 bg-white/5 border-b border-white/5 backdrop-blur-sm relative z-20">
                             <div className="flex items-center gap-2">
                                 <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Main.java</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                    {currentProblem.language === 'javascript' ? 'solution.js' : currentProblem.language === 'typescript' ? 'solution.ts' : 'Solution.java'}
+                                </span>
                             </div>
                             <button
                                 onClick={runCode}
@@ -266,7 +272,8 @@ const AssessmentRunner = () => {
                         <div className="flex-1 relative group">
                             <Editor
                                 height="100%"
-                                defaultLanguage="java"
+                                defaultLanguage={currentProblem.language || 'java'}
+                                language={currentProblem.language || 'java'}
                                 theme="vs-dark"
                                 value={currentCode}
                                 onChange={handleCodeChange}

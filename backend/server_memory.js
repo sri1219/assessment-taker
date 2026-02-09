@@ -19,6 +19,7 @@ const problems_seed = [
         _id: 'problem-1',
         title: 'Sum of Two Numbers',
         description: 'Write a program that takes two integers as input and prints their sum.',
+        language: 'java',
         starterCode: 'import java.util.Scanner;\n\npublic class Solution {\n    public static void main(String[] args) {\n        Scanner scanner = new Scanner(System.in);\n        int a = scanner.nextInt();\n        int b = scanner.nextInt();\n        System.out.println(a + b);\n    }\n}',
         testCases: [{ input: '2 3', expectedOutput: '5' }, { input: '10 20', expectedOutput: '30' }]
     }
@@ -56,6 +57,25 @@ app.post('/api/problems', (req, res) => {
     const problem = { _id: uuidv4(), ...req.body };
     PROBLEMS.push(problem);
     res.json(problem);
+});
+app.put('/api/problems/:id', (req, res) => {
+    console.log('PUT /api/problems/:id called');
+    console.log('Problem ID:', req.params.id);
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+    const idx = PROBLEMS.findIndex(p => p._id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Problem not found' });
+
+    PROBLEMS[idx] = { _id: req.params.id, ...req.body };
+
+    console.log('Updated problem:', JSON.stringify(PROBLEMS[idx], null, 2));
+    res.json(PROBLEMS[idx]);
+});
+app.delete('/api/problems/:id', (req, res) => {
+    const idx = PROBLEMS.findIndex(p => p._id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Problem not found' });
+    PROBLEMS.splice(idx, 1);
+    res.json({ message: 'Problem deleted' });
 });
 
 // --- ASSESSMENT ROUTES ---
@@ -127,60 +147,47 @@ app.post('/api/submissions/:submissionId/delete', (req, res) => {
     }
 });
 
-// --- REAL EXECUTION ---
-app.post('/api/execute/run', (req, res) => {
-    const { code, input } = req.body;
-    const fileName = `Solution_${uuidv4()}.java`;
-    const filePath = path.join(__dirname, 'temp', fileName);
+// --- REAL EXECUTION (Multi-Language Support) ---
+const { executeJava, executeJS, executeTS } = require('./utils/executor');
 
-    if (!fs.existsSync(path.join(__dirname, 'temp'))) {
-        fs.mkdirSync(path.join(__dirname, 'temp'));
+app.post('/api/execute/run', async (req, res) => {
+    const { code, input, language = 'java' } = req.body;
+
+    // Security Check
+    const securityViolations = [
+        'Runtime.getRuntime',
+        'ProcessBuilder',
+        'require("child_process")',
+        'require("fs")',
+        'eval(',
+        'Function(',
+        '__dirname',
+        '__filename'
+    ];
+
+    const hasViolation = securityViolations.some(keyword => code.includes(keyword));
+    if (hasViolation) {
+        return res.json({ output: '', error: 'Security Violation: Restricted keywords detected.' });
     }
 
-    // Wrap code in Solution class if not already? 
-    // Assumption: User provides full class or we wrap. The starter code implies full class.
-    // However, the filename must match class name "Solution". 
-    // Java is strict. We must rename class to matched filename OR keep it simple.
-    // Hack: We'll force the class name to be 'Solution' and run it as such in a isolated folder?
-    // Easier: Write to 'Solution.java', compile, then rename/cleanup.
-    // BUT concurrent users will conflict on 'Solution.java'.
-    // Better: Use `Solution` class but in a unique temp folder per request.
-
-    const runId = uuidv4();
-    const tempDir = path.join(__dirname, 'temp', runId);
-    fs.mkdirSync(tempDir, { recursive: true });
-
-    const javaFile = path.join(tempDir, 'Solution.java');
-
-    fs.writeFileSync(javaFile, code);
-
-    // Compile and Run
-    const compileCmd = `javac "${javaFile}"`;
-
-    exec(compileCmd, (error, stdout, stderr) => {
-        if (error) {
-            // cleanup
-            fs.rmSync(tempDir, { recursive: true, force: true });
-            return res.json({ error: 'Compilation Error:\n' + stderr });
+    try {
+        let result;
+        switch (language.toLowerCase()) {
+            case 'javascript':
+                result = await executeJS(code, input || "");
+                break;
+            case 'typescript':
+                result = await executeTS(code, input || "");
+                break;
+            case 'java':
+            default:
+                result = await executeJava(code, input || "");
+                break;
         }
-
-        // Run
-        // Note: input needed via stdin
-        const runCmd = `java -cp "${tempDir}" Solution`;
-
-        const child = exec(runCmd, { timeout: 5000 }, (err, sout, serr) => {
-            fs.rmSync(tempDir, { recursive: true, force: true });
-            if (err) {
-                return res.json({ error: 'Runtime Error:\n' + serr });
-            }
-            res.json({ output: sout.trim() });
-        });
-
-        if (input) {
-            child.stdin.write(input);
-            child.stdin.end();
-        }
-    });
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
 });
 
 app.listen(PORT, () => {

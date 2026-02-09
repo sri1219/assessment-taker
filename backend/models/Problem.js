@@ -9,6 +9,7 @@ const TestCaseSchema = new mongoose.Schema({
 const ProblemSchema = new mongoose.Schema({
     title: { type: String, required: true },
     description: { type: String, required: true },
+    language: { type: String, enum: ['java', 'javascript', 'typescript'], default: 'java' },
     starterCode: { type: String, default: 'public class Solution {\n    public static void main(String[] args) {\n        // Write your code here\n    }\n}' },
     testCases: { type: [TestCaseSchema], default: [] },
     totalMarks: { type: Number, default: 10 },
